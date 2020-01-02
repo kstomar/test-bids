@@ -1,10 +1,13 @@
 class BidsController < ApplicationController
+  before_action :set_auction
+  # before_action :authenticate_user!
+  before_action :set_item
   before_action :set_bid, only: [:show, :edit, :update, :destroy]
 
   # GET /bids
   # GET /bids.json
   def index
-    @bids = Bid.all
+    @bids = @item.auction.bids
   end
 
   # GET /bids/1
@@ -12,20 +15,10 @@ class BidsController < ApplicationController
   def show
   end
 
-  # GET /bids/new
-  def new
-    @bid = Bid.new
-  end
-
-  # GET /bids/1/edit
-  def edit
-  end
-
-  # POST /bids
   # POST /bids.json
   def create
-    @bid = Bid.new(bid_params)
-
+    @bid = @item.bids.new(bid_params)
+    @bid.user = current_user
     respond_to do |format|
       if @bid.save
         format.html { redirect_to @bid, notice: 'Bid was successfully created.' }
@@ -64,11 +57,23 @@ class BidsController < ApplicationController
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_bid
-      @bid = Bid.find(params[:id])
+      @bid = @item.bids.find_by(id: params[:id])
+      render json: { errors: { detail: "Bid not found" } }, status: :unauthorized and return unless @bid
+    end
+
+    def set_auction
+      @auction = Auction.find_by(id: params[:auction_id])
+      render json: { errors: { detail: "Auction not found" } }, status: :unauthorized and return unless @auction
+
+    end
+    def set_item
+      @item = @auction.items.find_by(id: params[:item_id])
+      render json: { errors: { detail: "Item not found" } }, status: :unauthorized and return unless @item
+
     end
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def bid_params
-      params.require(:bid).permit(:item_id, :value, :user_id)
+      params.require(:bid).permit(:item_id, :value)
     end
 end

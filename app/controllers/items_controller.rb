@@ -1,5 +1,29 @@
 class ItemsController < ApplicationController
-  before_action :set_item, only: [:show, :edit, :update, :destroy]
+  before_action :set_auction
+  before_action :set_item, only: [:show, :edit, :update, :destroy, :highest_bid, :my_bids]
+
+  def highest_bid
+    @bid = @item.bids.order("value DESC").first
+    respond_to do |format|
+      if @bid
+        format.json { render 'bids/show', location: @bid }
+      else
+        format.json { render json: "Bid not found" }
+      end
+    end
+  end
+
+  def my_bids
+    @bids = @item.bids
+    respond_to do |format|
+      if @bids
+        format.json { render 'bids/index',  collection: @bids }
+      else
+        format.json { render json: "Bid not found" }
+      end
+    end
+
+  end
 
   # GET /items
   # GET /items.json
@@ -62,9 +86,15 @@ class ItemsController < ApplicationController
   end
 
   private
-    # Use callbacks to share common setup or constraints between actions.
+    def set_auction
+      @auction = Auction.find_by(id: params[:auction_id])
+      render json: { errors: { detail: "Auction not found" } }, status: :unauthorized and return unless @auction
+
+    end
     def set_item
-      @item = Item.find(params[:id])
+      @item = @auction.items.find_by(id: params[:item_id])
+      render json: { errors: { detail: "Item not found" } }, status: :unauthorized and return unless @item
+
     end
 
     # Never trust parameters from the scary internet, only allow the white list through.
